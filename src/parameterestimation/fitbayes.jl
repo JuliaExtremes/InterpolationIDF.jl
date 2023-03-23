@@ -1,102 +1,13 @@
-function mcmc(data::DataStructure; niter::Int=5000, warmup::Int=2000, stepsize::Array{Float64}=[.1, .15, .02], thin::Int64=5)
+function mcmc(data::DataStructure; niter::Int=5000, warmup::Int=2000, stepsize::Array{Float64}=[.1, .15, .02], thin::Int64=5, returnUV::Bool=false)
     
-    n = length(data.Y)
-    p₁ = size(data.X₁ᵢ, 2)
-    p₂ = size(data.X₂ᵢ, 2)
+    ini = initialize_rf(data)
     
-    # Pre-initialize outputs 
-    u = Array{Float64}(undef, n, niter)
-    β₁ = Array{Float64}(undef, p₁, niter)
-    κ₁ = Array{Float64}(undef, niter)
-
-    v = Array{Float64}(undef, n, niter)
-    β₂ = Array{Float64}(undef, p₂, niter)
-    κ₂ = Array{Float64}(undef, niter)
-
-    ξ = Array{Float64}(undef, niter)
-    
-    # Initial values
-    μ₀, σ₀, ξ[1], U, β₁[:,1], κ₁[1], V, β₂[:,1], κ₂[1] = initialize_rf(data)
-    u[:,1] = U[data.S.V]
-    v[:,1] = V[data.S.V]
-    
-    
-    F₁ = GMRF.iGMRF(data.G, 1, κ₁[1])
-    F₂ = GMRF.iGMRF(data.G, 1, κ₂[1])
-
-    δ = randn(n)
-
-    @showprogress for j=2:niter
-
-        # Generate a candidate for {Uᵢ : i ∈ S}
-        Ũ = u[:,j-1] + stepsize[1]*randn!(δ)
-
-        # Computing the corresponding candidates for μ at the grid cells containing the observations
-        μ̃ = exp.(data.X₁ᵢ*β₁[:,j-1] + Ũ);
-
-        # Evaluate the log-likelihood ratio at the data level between the candidates and the present state
-        logL = datalevel_loglike.(data.Y, μ̃, σ₀, ξ[j-1]) - datalevel_loglike.(data.Y, μ₀, σ₀, ξ[j-1])
-
-        # Updating the latent field U
-        latentgmrf_update!(U, F₁, data.S, data.S̄, Ũ, logL)
-
-        u[:,j] = U[data.S.V]
-
-        x = data.X₁ᵢ*β₁[:, j-1]+u[:,j]
-        μ₀ = exp.(x)
-        β₁[:, j] = data.X₁ᵢ \ ( x .- mean(U[data.S.V]) )  
-
-        # Sampling the new precision parameter
-        κ₁[j] = latentfieldprecision_sample(F₁, U)
-
-        # Updating the iGMRF object with the new precision
-        F₁ = GMRF.iGMRF(data.G, 1, κ₁[j])
-
-
-        # Generate a candidate for {Vᵢ : i ∈ S}
-        Ṽ = v[:,j-1] + stepsize[2]*randn!(δ)
-
-        # Computing the corresponding candidates for σ at the grid cells containing the observations
-        σ̃ = exp.(data.X₂ᵢ*β₂[:, j-1] + Ṽ)
-
-        # Evaluate the log-likelihood ratio at the data level between the candidates and the present state
-        logL = datalevel_loglike.(data.Y, μ₀, σ̃, ξ[j-1]) - datalevel_loglike.(data.Y, μ₀, σ₀, ξ[j-1])
-
-        # Updating the latent field V
-        latentgmrf_update!(V, F₂, data.S, data.S̄, Ṽ, logL)
-
-        v[:,j] = V[data.S.V]
-
-        x = data.X₂ᵢ*β₂[:,j-1]+v[:,j]
-        σ₀ = exp.(x)
-        β₂[:, j] = data.X₂ᵢ \ ( x .- mean(V[data.S.V]) )
-        
-
-        # Sampling the new precision parameter
-        κ₂[j] = latentfieldprecision_sample(F₂, V)
-
-        # Updating the iGMRF object with the new precision
-        F₂ = GMRF.iGMRF(data.G, 1, κ₂[j])
-
-        ξ̃ = ξ[j-1] + stepsize[3]*randn()
-        logL = sum(datalevel_loglike.(data.Y, μ₀, σ₀, ξ̃) - datalevel_loglike.(data.Y, μ₀, σ₀, ξ[j-1]))
-        if logL > log(rand())
-            ξ[j] = ξ̃
-        else
-            ξ[j] = ξ[j-1]
-        end
-
-    end
-
-    parmnames = vcat(["u[$i]" for i=1:n], ["v[$i]" for i=1:n], "κ₁", ["β₁[$i]" for i=1:p₁], "κ₂", ["β₂[$i]" for i=1:p₂], "ξ")
-    res = vcat(u, v, κ₁', β₁, κ₂', β₂, ξ')
-    C = MambaLite.Chains(collect(res'), names=parmnames)
-
-    return C = C[warmup+1:thin:end,:,:]
+    return mcmc(data, ini, niter=niter, warmup=warmup, stepsize=stepsize, thin=thin, returnUV=returnUV)
     
 end
 
-function mcmc(data::DataStructure, initial_values::Tuple{Vector{Float64}, Vector{Float64}, Float64, Vector{Float64}, Vector{Float64}, Real, Vector{Float64}, Vector{Float64}, Real}; niter::Int=5000, warmup::Int=2000, stepsize::Array{Float64}=[.1, .15, .02], thin::Int64=5) # u, v, xi
+
+function mcmc(data::DataStructure, initial_values::Tuple{Vector{Float64}, Vector{Float64}, Float64, Vector{Float64}, Vector{Float64}, Real, Vector{Float64}, Vector{Float64}, Real}; niter::Int=5000, warmup::Int=2000, stepsize::Array{Float64}=[.1, .15, .02], thin::Int64=5, returnUV::Bool=false)
     
     n = length(data.Y)
     p₁ = size(data.X₁ᵢ, 2)
@@ -190,7 +101,11 @@ function mcmc(data::DataStructure, initial_values::Tuple{Vector{Float64}, Vector
     C = MambaLite.Chains(collect(res'), names=parmnames)
     C = C[warmup+1:thin:end,:,:]
     
-    return C, U, V
+    if returnUV
+        return C, U, V
+    else
+        return C
+    end
     
 end
 
@@ -218,9 +133,6 @@ function mcmc_valid(data::DataStructure, initial_values::Tuple{Vector{Float64}, 
     μ₀, σ₀, ξ[1], U, β₁[:,1], κ₁[1], V,β₂[:,1], κ₂[1] = initial_values
     u[:,1] = U[data.S.V]
     v[:,1] = V[data.S.V]
-    
-#     μᵥ[1] = exp(β₁[:,1]*X₁ + U[gridpoint])
-#     σᵥ[1] = exp(β₂[:,1]*X₂ + V[gridpoint])
     
     μᵥ[1] = exp((X₁*β₁[:,1])[1] + U[gridpoint])
     σᵥ[1] = exp((X₂*β₂[:,1])[1] + V[gridpoint])
@@ -290,8 +202,6 @@ function mcmc_valid(data::DataStructure, initial_values::Tuple{Vector{Float64}, 
             ξ[j] = ξ[j-1]
         end
         
-#         μᵥ[j] = exp(β₁[j]*X₁ + U[gridpoint])
-#         σᵥ[j] = exp(β₂[j]*X₂ + V[gridpoint])
         μᵥ[j] = exp((X₁*β₁[:,j])[1] + U[gridpoint])
         σᵥ[j] = exp((X₂*β₂[:,j])[1] + V[gridpoint])
 
@@ -311,317 +221,6 @@ function mcmc_valid(data::DataStructure, initial_values::Tuple{Vector{Float64}, 
     
 end
 
-
-
-# function mcmc(data::DataStructure; niter::Int=5000, warmup::Int=2000, stepsize::Array{Float64}=[.1, .15, .02], thin::Int64=5) # u, v, xi
-
-#     n = length(data.Y)
-    
-#     # Pre-initialize outputs 
-#     u = Array{Float64}(undef, n, niter)
-#     β₁ = Array{Float64}(undef, niter)
-#     κ₁ = Array{Float64}(undef, niter)
-
-#     v = Array{Float64}(undef, n, niter)
-#     β₂ = Array{Float64}(undef, niter)
-#     κ₂ = Array{Float64}(undef, niter)
-
-#     ξ = Array{Float64}(undef, niter)
-    
-#     # Initial values
-#     μ₀, σ₀, ξ[1], U, β₁[1], κ₁[1], V, β₂[1], κ₂[1] = initialize_rf(data)
-#     u[:,1] = U[data.S.V]
-#     v[:,1] = V[data.S.V]
-    
-#     F₁ = GMRF.iGMRF(data.G, 1, κ₁[1])
-#     F₂ = GMRF.iGMRF(data.G, 1, κ₂[1])
-
-#     δ = randn(n)
-
-
-#     @showprogress for j=2:niter
-
-#         # Generate a candidate for {Uᵢ : i ∈ S}
-#         Ũ = u[:,j-1] + stepsize[1]*randn!(δ)
-
-#         # Computing the corresponding candidates for μ at the grid cells containing the observations
-#         μ̃ = exp.(data.X₁ᵢ*β₁[j-1] + Ũ)
-
-#         # Evaluate the log-likelihood ratio at the data level between the candidates and the present state
-#         logL = datalevel_loglike.(data.Y, μ̃, σ₀, ξ[j-1]) - datalevel_loglike.(data.Y, μ₀, σ₀, ξ[j-1])
-
-#         # Updating the latent field U
-#         latentgmrf_update!(U, F₁, data.S, data.S̄, Ũ, logL)
-
-#         u[:,j] = U[data.S.V]
-
-#         x = data.X₁ᵢ*β₁[j-1]+u[:,j]
-#         μ₀ = exp.(x)
-#         β₁[j] = data.X₁ᵢ \ ( x .- mean(U[data.S.V]) )  # ici beta=0 pour v.e. = rien
-
-#         # Sampling the new precision parameter
-#         κ₁[j] = latentfieldprecision_sample(F₁, U)
-
-#         # Updating the iGMRF object with the new precision
-#         F₁ = GMRF.iGMRF(data.G, 1, κ₁[j])
-
-
-#         # Generate a candidate for {Vᵢ : i ∈ S}
-#         Ṽ = v[:,j-1] + stepsize[2]*randn!(δ)
-
-#         # Computing the corresponding candidates for σ at the grid cells containing the observations
-#         σ̃ = exp.(data.X₂ᵢ*β₂[j-1] + Ṽ)
-
-#         # Evaluate the log-likelihood ratio at the data level between the candidates and the present state
-#         logL = datalevel_loglike.(data.Y, μ₀, σ̃, ξ[j-1]) - datalevel_loglike.(data.Y, μ₀, σ₀, ξ[j-1])
-
-#         # Updating the latent field V
-#         latentgmrf_update!(V, F₂, data.S, data.S̄, Ṽ, logL)
-
-#         v[:,j] = V[data.S.V]
-
-#         x = data.X₂ᵢ*β₂[j-1]+v[:,j]
-#         σ₀ = exp.(x)
-#         β₂[j] = data.X₂ᵢ \ ( x .- mean(V[data.S.V]) )  # FONCTIONNE
-
-#         # Sampling the new precision parameter
-#         κ₂[j] = latentfieldprecision_sample(F₂, V)
-
-#         # Updating the iGMRF object with the new precision
-#         F₂ = GMRF.iGMRF(data.G, 1, κ₂[j])
-
-#         ξ̃ = ξ[j-1] + stepsize[3]*randn()
-#         logL = sum(datalevel_loglike.(data.Y, μ₀, σ₀, ξ̃) - datalevel_loglike.(data.Y, μ₀, σ₀, ξ[j-1]))
-#         if logL > log(rand())
-#             ξ[j] = ξ̃
-#         else
-#             ξ[j] = ξ[j-1]
-#         end
-
-#     end
-
-#     parmnames = vcat(["u[$i]" for i=1:n], ["v[$i]" for i=1:n], "κ₁", "β₁", "κ₂", "β₂","ξ")
-#     res = vcat(u, v, κ₁', β₁', κ₂', β₂', ξ')
-#     C = MambaLite.Chains(collect(res'), names=parmnames)
-
-#     #return C
-#     return C = C[warmup+1:thin:end,:,:]
-
-# end
-
-
-# function mcmc(data::DataStructure, initial_values::Tuple{Vector{Float64}, Vector{Float64}, Float64, Vector{Float64}, Float64, Real, Vector{Float64}, Float64, Real}; niter::Int=5000, warmup::Int=2000, stepsize::Array{Float64}=[.1, .15, .02], thin::Int64=5) # u, v, xi
-
-#     n = length(data.Y)
-    
-#     # Pre-initialize outputs 
-#     u = Array{Float64}(undef, n, niter)
-#     β₁ = Array{Float64}(undef, niter)
-#     κ₁ = Array{Float64}(undef, niter)
-
-#     v = Array{Float64}(undef, n, niter)
-#     β₂ = Array{Float64}(undef, niter)
-#     κ₂ = Array{Float64}(undef, niter)
-
-#     ξ = Array{Float64}(undef, niter)
-    
-#     # Initial values
-#     μ₀, σ₀, ξ[1], U, β₁[1], κ₁[1], V, β₂[1], κ₂[1] = initial_values
-#     u[:,1] = U[data.S.V]
-#     v[:,1] = V[data.S.V]
-    
-#     F₁ = GMRF.iGMRF(data.G, 1, κ₁[1])
-#     F₂ = GMRF.iGMRF(data.G, 1, κ₂[1])
-
-#     δ = randn(n)
-
-#     @showprogress for j=2:niter
-
-#         # Generate a candidate for {Uᵢ : i ∈ S}
-#         Ũ = u[:,j-1] + stepsize[1]*randn!(δ)
-
-#         # Computing the corresponding candidates for μ at the grid cells containing the observations
-#         μ̃ = exp.(data.X₁ᵢ*β₁[j-1] + Ũ)
-
-#         # Evaluate the log-likelihood ratio at the data level between the candidates and the present state
-#         logL = datalevel_loglike.(data.Y, μ̃, σ₀, ξ[j-1]) - datalevel_loglike.(data.Y, μ₀, σ₀, ξ[j-1])
-
-#         # Updating the latent field U
-#         latentgmrf_update!(U, F₁, data.S, data.S̄, Ũ, logL)
-
-#         u[:,j] = U[data.S.V]
-
-#         x = data.X₁ᵢ*β₁[j-1]+u[:,j]
-#         μ₀ = exp.(x)
-#         β₁[j] = data.X₁ᵢ \ ( x .- mean(U[data.S.V]) )  
-
-#         # Sampling the new precision parameter
-#         κ₁[j] = latentfieldprecision_sample(F₁, U)
-
-#         # Updating the iGMRF object with the new precision
-#         F₁ = GMRF.iGMRF(data.G, 1, κ₁[j])
-
-
-#         # Generate a candidate for {Vᵢ : i ∈ S}
-#         Ṽ = v[:,j-1] + stepsize[2]*randn!(δ)
-
-#         # Computing the corresponding candidates for σ at the grid cells containing the observations
-#         σ̃ = exp.(data.X₂ᵢ*β₂[j-1] + Ṽ)
-
-#         # Evaluate the log-likelihood ratio at the data level between the candidates and the present state
-#         logL = datalevel_loglike.(data.Y, μ₀, σ̃, ξ[j-1]) - datalevel_loglike.(data.Y, μ₀, σ₀, ξ[j-1])
-
-#         # Updating the latent field V
-#         latentgmrf_update!(V, F₂, data.S, data.S̄, Ṽ, logL)
-
-#         v[:,j] = V[data.S.V]
-
-#         x = data.X₂ᵢ*β₂[j-1]+v[:,j]
-#         σ₀ = exp.(x)
-#         β₂[j] = data.X₂ᵢ \ ( x .- mean(V[data.S.V]) )  # FONCTIONNE
-
-#         # Sampling the new precision parameter
-#         κ₂[j] = latentfieldprecision_sample(F₂, V)
-
-#         # Updating the iGMRF object with the new precision
-#         F₂ = GMRF.iGMRF(data.G, 1, κ₂[j])
-
-#         ξ̃ = ξ[j-1] + stepsize[3]*randn()
-#         logL = sum(datalevel_loglike.(data.Y, μ₀, σ₀, ξ̃) - datalevel_loglike.(data.Y, μ₀, σ₀, ξ[j-1]))
-#         if logL > log(rand())
-#             ξ[j] = ξ̃
-#         else
-#             ξ[j] = ξ[j-1]
-#         end
-       
-#         #calcul mu sigma xi (station) -> push dataframe
-        
-#     end
-
-#     parmnames = vcat(["u[$i]" for i=1:n], ["v[$i]" for i=1:n], "κ₁", "β₁", "κ₂", "β₂","ξ")
-#     res = vcat(u, v, κ₁', β₁', κ₂', β₂', ξ')
-#     C = MambaLite.Chains(collect(res'), names=parmnames)
-#     C = C[warmup+1:thin:end,:,:]
-    
-#     return C, U, V
-
-# end
-
-# function mcmc_valid(data::DataStructure, initial_values::Tuple{Vector{Float64}, Vector{Float64}, Float64, Vector{Float64}, Float64, Real, Vector{Float64}, Float64, Real}, gridpoint::Int64, X₁::Float64, X₂::Float64; niter::Int=5000, warmup::Int=2000, stepsize::Array{Float64}=[.1, .15, .02], thin::Int64=5) # u, v, xi
-
-#     n = length(data.Y)
-    
-#     # Pre-initialize outputs 
-#     u = Array{Float64}(undef, n, niter)
-#     β₁ = Array{Float64}(undef, niter)
-#     κ₁ = Array{Float64}(undef, niter)
-
-#     v = Array{Float64}(undef, n, niter)
-#     β₂ = Array{Float64}(undef, niter)
-#     κ₂ = Array{Float64}(undef, niter)
-
-#     ξ = Array{Float64}(undef, niter)
-#     μᵥ = Array{Float64}(undef, niter)
-#     σᵥ = Array{Float64}(undef, niter)
-    
-#     # Initial values
-#     μ₀, σ₀, ξ[1], U, β₁[1], κ₁[1], V, β₂[1], κ₂[1] = initial_values
-#     u[:,1] = U[data.S.V]
-#     v[:,1] = V[data.S.V]
-    
-#     μᵥ[1] = exp(β₁[1]*X₁ + U[gridpoint])
-#     σᵥ[1] = exp(β₂[1]*X₂ + V[gridpoint])
-    
-#     F₁ = GMRF.iGMRF(data.G, 1, κ₁[1])
-#     F₂ = GMRF.iGMRF(data.G, 1, κ₂[1])
-
-#     δ = randn(n)
-    
-    
-
-#     @showprogress for j=2:niter
-
-#         # Generate a candidate for {Uᵢ : i ∈ S}
-#         Ũ = u[:,j-1] + stepsize[1]*randn!(δ)
-
-#         # Computing the corresponding candidates for μ at the grid cells containing the observations
-#         μ̃ = exp.(data.X₁ᵢ*β₁[j-1] + Ũ)
-
-#         # Evaluate the log-likelihood ratio at the data level between the candidates and the present state
-#         logL = datalevel_loglike.(data.Y, μ̃, σ₀, ξ[j-1]) - datalevel_loglike.(data.Y, μ₀, σ₀, ξ[j-1])
-
-#         # Updating the latent field U
-#         latentgmrf_update!(U, F₁, data.S, data.S̄, Ũ, logL)
-
-#         u[:,j] = U[data.S.V]
-
-#         x = data.X₁ᵢ*β₁[j-1]+u[:,j]
-#         μ₀ = exp.(x)
-#         β₁[j] = data.X₁ᵢ \ ( x .- mean(U[data.S.V]) )  
-
-#         # Sampling the new precision parameter
-#         κ₁[j] = latentfieldprecision_sample(F₁, U)
-
-#         # Updating the iGMRF object with the new precision
-#         F₁ = GMRF.iGMRF(data.G, 1, κ₁[j])
-
-
-#         # Generate a candidate for {Vᵢ : i ∈ S}
-#         Ṽ = v[:,j-1] + stepsize[2]*randn!(δ)
-
-#         # Computing the corresponding candidates for σ at the grid cells containing the observations
-#         σ̃ = exp.(data.X₂ᵢ*β₂[j-1] + Ṽ)
-
-#         # Evaluate the log-likelihood ratio at the data level between the candidates and the present state
-#         logL = datalevel_loglike.(data.Y, μ₀, σ̃, ξ[j-1]) - datalevel_loglike.(data.Y, μ₀, σ₀, ξ[j-1])
-
-#         # Updating the latent field V
-#         latentgmrf_update!(V, F₂, data.S, data.S̄, Ṽ, logL)
-
-#         v[:,j] = V[data.S.V]
-
-#         x = data.X₂ᵢ*β₂[j-1]+v[:,j]
-#         σ₀ = exp.(x)
-#         β₂[j] = data.X₂ᵢ \ ( x .- mean(V[data.S.V]) )  # FONCTIONNE
-
-#         # Sampling the new precision parameter
-#         κ₂[j] = latentfieldprecision_sample(F₂, V)
-
-#         # Updating the iGMRF object with the new precision
-#         F₂ = GMRF.iGMRF(data.G, 1, κ₂[j])
-
-#         ξ̃ = ξ[j-1] + stepsize[3]*randn()
-#         logL = sum(datalevel_loglike.(data.Y, μ₀, σ₀, ξ̃) - datalevel_loglike.(data.Y, μ₀, σ₀, ξ[j-1]))
-#         if logL > log(rand())
-#             ξ[j] = ξ̃
-#         else
-#             ξ[j] = ξ[j-1]
-#         end
-        
-#         μᵥ[j] = exp(β₁[j]*X₁ + U[gridpoint])
-#         σᵥ[j] = exp(β₂[j]*X₂ + V[gridpoint])
-        
-        
-#         # mu = exp(β₁₀*X₁[test.GridCell] + U₀[test.GridCell])
-#         # sigma = exp(β₂₀*X₂[test.GridCell] + V₀[test.GridCell])
-       
-#         #calcul mu sigma xi (station) -> push dataframe
-        
-#     end
-
-#     parmnames = vcat(["u[$i]" for i=1:n], ["v[$i]" for i=1:n], "κ₁", "β₁", "κ₂", "β₂","ξ")
-#     res = vcat(u, v, κ₁', β₁', κ₂', β₂', ξ')
-#     C = MambaLite.Chains(collect(res'), names=parmnames)
-#     C = C[warmup+1:thin:end,:,:]
-    
-#     parmnames2 = vcat("μ", "σ", "ξ")
-#     res2 = vcat(μᵥ', σᵥ', ξ')
-#     C2 = MambaLite.Chains(collect(res2'), names=parmnames2)
-#     C2 = C2[warmup+1:thin:end,:,:]
-    
-#     return C, C2
-
-# end
 
 function latentgmrf_update!(x::Vector{<:Real}, F::GMRF.iGMRF, S::GridPointStructure, S̄::GridPointStructure, x̃::Vector{<:Real}, logL::Vector{<:Real})
 
