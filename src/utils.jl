@@ -50,12 +50,12 @@ function create_datastructure(G::GMRF.GridStructure, station_list::DataFrame, m�
     S̄ = GridPointStructure(V̄, condIndSubset, condIndIndex)
 
     # Covariables 
-    X₁_spatial = log.(spatial_cov)
-    X₁_local = log.(local_cov)
+    X₁_spatial = spatial_cov
+    X₁_local = local_cov
     X₁ᵢ = hcat(X₁_spatial[S.V, :], X₁_local)
     
-    X₂_spatial = log.(spatial_cov)
-    X₂_local = log.(local_cov)
+    X₂_spatial = spatial_cov
+    X₂_local = local_cov
     X₂ᵢ = hcat(X₂_spatial[S.V, :], X₂_local)
 
     return DataStructure(Y, X₁ᵢ, X₂ᵢ, G, S, S̄)
@@ -67,9 +67,9 @@ end
 
 Load an IDF CSV file
 """
-function idf_load(stationID::AbstractString)
+function idf_load(stationID::AbstractString, path::AbstractString)
 
-    path = "data/"
+    #path = "data/"
     filename = path*stationID*".csv"
 
     df = CSV.read(filename, DataFrame)
@@ -196,4 +196,24 @@ function getGEV(C::Chains, data::DataStructure, X₁::Array{<:Real}, X₂::Array
 
     return gevChain
 
+end
+
+function Base.write(name::AbstractString, c::MambaLite.AbstractChains)
+  open(file -> serialize(file, c), name, "w")
+end
+
+function Base.read(name::AbstractString, ::Type{T}) where {T<:MambaLite.AbstractChains}
+  c = open(deserialize, name, "r")
+  isa(c, T) || throw(TypeError(:open, "read(\"$name\", $T)", T, c))
+  c
+end
+
+function Base.write(name::AbstractString, c::Vector{Float64})
+  open(file -> serialize(file, c), name, "w")
+end
+
+function Base.read(name::AbstractString, ::Type{T}) where {T<:Vector{Float64}}
+  c = open(deserialize, name, "r")
+  isa(c, T) || throw(TypeError(:open, "read(\"$name\", $T)", T, c))
+  c
 end

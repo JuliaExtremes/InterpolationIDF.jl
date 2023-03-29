@@ -7,7 +7,9 @@ using SuiteSparse
 using Gadfly
 using MambaLite, ProgressMeter
 using TimerOutputs
-
+using Serialization
+import Base.write
+import Base.read
 
 include("structures.jl")
 include("parameterestimation.jl")
@@ -50,6 +52,8 @@ export
     datalevel_loglike,
     getGEV,
     slicematrix,
+	read,
+	write,
 
     # Validation
     nearest_station_finder,
@@ -57,7 +61,9 @@ export
     qqnaive,
     qqspatial,
     get_ω̂,
-    get_ω̄
+    get_ω̄,
+	densityplot,
+	trace_plot
 
      
 end # module

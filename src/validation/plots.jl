@@ -89,3 +89,36 @@ end
     
 #     return qq_data
 # end
+
+function densityplot(c::MambaLite.AbstractChains; legend::Bool=false,
+                     trim::Tuple{Real, Real}=(0.025, 0.975), na...)
+  nrows, nvars, nchains = size(c.value)
+  plots = Array{Plot}(undef, nvars)
+  pos = legend ? :right : :none
+  for i in 1:nvars
+    val = Array{Vector{Float64}}(undef, nchains)
+    for j in 1:nchains
+      qs = quantile(c.value[:, i, j], [trim[1], trim[2]])
+      val[j] = c.value[qs[1] .<= c.value[:, i, j] .<= qs[2], i, j]
+    end
+    plots[i] = Gadfly.plot(x=[val...;], Geom.density(),
+                    color=repeat(c.chains, inner=[length(c.range)]),
+                    Scale.color_discrete(), Guide.colorkey(title="Chain"),
+                    Guide.xlabel("Value", orientation=:horizontal),
+                    Guide.ylabel("Density", orientation=:vertical),
+                    Guide.title(c.names[i]), Theme(key_position=pos))
+  end
+  return plots
+end
+
+function trace_plot(c::MambaLite.AbstractChains)
+    fig1 = Gadfly.plot(y = c.value, Geom.line,
+    Guide.xlabel("Iteration"),
+    Guide.ylabel("Value"),
+    Guide.title(c.names[1]))
+
+    fig2 = densityplot(c)[1]
+
+    Gadfly.set_default_plot_size(24cm, 8cm)
+    return hstack(fig1,fig2)
+end
