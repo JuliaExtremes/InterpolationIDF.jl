@@ -54,7 +54,7 @@ station_list = get_station_list(GRIDDED_COV_PATH, STATION_INFO_PATH, STATION_DAT
 
 ### 2. Latent iGMRF definition
 
-The grid structure for the latent iGMRFs is defined using the `ìGMRF` function from the package *[GMRF.jl](https://github.com/jojal5/GMRF.jl)*. The set of grid cells where the observations are is defined in $S$ and the remaining grid cells are defined in $\bar{S}$. Conditional independant subsets are also defined to improve MCMC performance.
+The grid structure for the latent iGMRFs is defined using the `iGMRF` function from the package *[GMRF.jl](https://github.com/jojal5/GMRF.jl)*. The set of grid cells where the observations are is defined in $S$ and the remaining grid cells are defined in $\bar{S}$. Conditional independant subsets are also defined to improve MCMC performance.
 
 ```julia
 G = GMRF.iGMRF(m₁,m₂,1,1).G
@@ -90,7 +90,13 @@ S̄ :
 
 ### 3. Markov Chain Monte Carlo for parameter estimation
 
-`mcmc`, `trace_plot`
+Markov Chain Monte Carlo procedure to generate a random sample of the posterior distribution can be executed using the function `mcmc`. Note that only the parameter values at the grid cells containing observations are retained to save memory. The values at the remaining grid cells can be interpolated offline.
+
+```julia
+C = mcmc(datastructure, niter=NITER, warmup=WARMUP, thin=THIN) 
+```
+
+It will return an object of type "Chains" from the package *MambaLite.jl*. To trace the chain and the density plot, the function `trace_plot` can be used.
 
 ### 4. Computing a sample of the GEV parameters posterior distribution
 
