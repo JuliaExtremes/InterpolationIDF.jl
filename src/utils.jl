@@ -1,14 +1,15 @@
+"""
+	create_datastructure(G::GMRF.GridStructure, station_list::DataFrame, m₁::Int64, m₂::Int64, covariate::Vector{Float64})
+
+"""
 function create_datastructure(G::GMRF.GridStructure, station_list::DataFrame, m₁::Int64, m₂::Int64, covariate::Vector{Float64})
     
-    # Données de station
+    # Station data
     Y = station_list.Data
     n = length(Y)
     m = m₁*m₂
 
-    # iGMRF
-    #G = iGMRF(m₁,m₂,1,1).G
-
-    V = station_list[:,:GridCell]  # le point de grille pour chacune des 315 stations
+    V = station_list[:,:GridCell]
     condIndIndex = [ findall(in(intersect(G.condIndSubset[j],V)),V) for j=1:length(G.condIndSubset)  ]
     condIndSubset = [ V[condIndIndex[j]] for j=1:length(condIndIndex)  ]
     S = GridPointStructure(V, condIndSubset, condIndIndex)
@@ -18,7 +19,7 @@ function create_datastructure(G::GMRF.GridStructure, station_list::DataFrame, m�
     condIndSubset = [ V̄[condIndIndex[j]] for j=1:length(condIndIndex) ]
     S̄ = GridPointStructure(V̄, condIndSubset, condIndIndex)
 
-    # Covariables 
+    # Covariates 
     X₁ = log.(covariate)
     X₁ᵢ = X₁[S.V]
 
@@ -29,17 +30,18 @@ function create_datastructure(G::GMRF.GridStructure, station_list::DataFrame, m�
     
 end
 
+"""
+	create_datastructure(G::GMRF.GridStructure, station_list::DataFrame, m₁::Int64, m₂::Int64, spatial_cov::Vector{Float64}, local_cov::Vector{Float64})
+
+"""
 function create_datastructure(G::GMRF.GridStructure, station_list::DataFrame, m₁::Int64, m₂::Int64, spatial_cov::Vector{Float64}, local_cov::Vector{Float64})
     
-    # Données de station
+    # Station data
     Y = station_list.Data
     n = length(Y)
     m = m₁*m₂
 
-    # iGMRF
-    #G = iGMRF(m₁,m₂,1,1).G
-
-    V = station_list[:,:GridCell]  # le point de grille pour chacune des 315 stations
+    V = station_list[:,:GridCell]
     condIndIndex = [ findall(in(intersect(G.condIndSubset[j],V)),V) for j=1:length(G.condIndSubset)  ]
     condIndSubset = [ V[condIndIndex[j]] for j=1:length(condIndIndex)  ]
     S = GridPointStructure(V, condIndSubset, condIndIndex)
@@ -49,7 +51,7 @@ function create_datastructure(G::GMRF.GridStructure, station_list::DataFrame, m�
     condIndSubset = [ V̄[condIndIndex[j]] for j=1:length(condIndIndex) ]
     S̄ = GridPointStructure(V̄, condIndSubset, condIndIndex)
 
-    # Covariables 
+    # Covariates 
     X₁_spatial = spatial_cov
     X₁_local = local_cov
     X₁ᵢ = hcat(X₁_spatial[S.V, :], X₁_local)
@@ -63,13 +65,13 @@ function create_datastructure(G::GMRF.GridStructure, station_list::DataFrame, m�
 end
 
 """
-    idf_load(stationID)
+    idf_load(stationID::AbstractString, path::AbstractString)
 
-Load an IDF CSV file
+Loads an IDF CSV file.
+
 """
 function idf_load(stationID::AbstractString, path::AbstractString)
 
-    #path = "data/"
     filename = path*stationID*".csv"
 
     df = CSV.read(filename, DataFrame)
@@ -82,9 +84,8 @@ function idf_load(stationID::AbstractString, path::AbstractString)
 
 end
 
-
 """
-    nnsearch()
+    nnsearch(X::Matrix{<:Real}, points::Matrix{<:Real})
 
 Nearest neighbor search.
 
@@ -113,7 +114,6 @@ function nnsearch(X::Matrix{<:Real}, point::Vector{<:Real})
     return ind
 
 end
-
 
 """
     slicematrix()
@@ -164,14 +164,11 @@ function datalevel_loglike(Y::Vector{<:Real},μ::Real,σ::Real,ξ::Real)
 
 end
 
-
 """
     getGEV()
 
 """
 function getGEV(C::Chains, data::DataStructure, X₁::Array{<:Real}, X₂::Array{<:Real})
-
-    #G = data.G
 
     #  number of grid cells
     m = prod(data.G.gridSize)
