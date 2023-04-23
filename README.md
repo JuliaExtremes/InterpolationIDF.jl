@@ -1,10 +1,15 @@
 # InterpolationIDF.jl
 
+## Installation
+
+The following julia command will install the package:
+
 ```julia
 import Pkg
-Pkg.add(url="https://github.com/jojal5/GMRF.jl")
 Pkg.add(url="https://github.com/JuliaExtremes/InterpolationIDF.jl")
 ```
+
+> :warning: **The unregisterred package GMRF.jl is also required.** To install it, run in the Julia package manager the following command: `Pkg.add(url="https://github.com/jojal5/GMRF.jl")`    
 
 ## References
 
