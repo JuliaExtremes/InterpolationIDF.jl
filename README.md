@@ -17,12 +17,26 @@ julia> Pkg.add(url="https://github.com/JuliaExtremes/InterpolationIDF.jl")
 julia> Pkg.add(url="https://github.com/jojal5/GMRF.jl")
 ```    
 
+## Data
+
+This version uses the hourly reanalyzed precipitations from the Regional Deterministic Reforecast System (Gasset et al., 2021) as the spatial covariate.
+
+
+## Tutorial
+
+### 1. Data loading and preparation
+
+### 2. Latent iGMRF definition
+
+### 3. Markov Chain Monte Carlo for parameter estimation
+
+### 4. Computing a sample of the GEV parameters posterior distribution
+
+### 5. Cross validation
+
+
 ## References
 
-* Jalbert, J., Genest, C., and Perreault, L. (2022). Interpolation of precipitation extremes on a large do-
-main toward IDF curve construction at unmonitored locations. Journal of Agricultural, Biological and
-Environmental Statistics.
-* Gasset, N., Fortin, V., Dimitrijevic, M., Carrera, M., Bilodeau, B., Muncaster, R., Gaborit, E., Roy, G.,
-Pentcheva, N., Bulat, M., Wang, X., Pavlovic, R., Lespinas, F., Khedhaouiria, D., and Mai, J. (2021).
-A 10 km north american precipitation and land-surface reanalysis based on the gem atmospheric model.
-Hydrology and Earth System Sciences, 25(9):4917–4945.
+Jalbert, J., Genest, C., and Perreault, L. (2022). Interpolation of precipitation extremes on a large domain toward IDF curve construction at unmonitored locations. *Journal of Agricultural, Biological and Environmental Statistics*.
+
+Gasset, N., Fortin, V., Dimitrijevic, M., Carrera, M., Bilodeau, B., Muncaster, R., Gaborit, E., Roy, G., Pentcheva, N., Bulat, M., Wang, X., Pavlovic, R., Lespinas, F., Khedhaouiria, D., and Mai, J. (2021). A 10 km North American precipitation and land-surface reanalysis based on the GEM atmospheric model. *Hydrology and Earth System Sciences*, 25(9):4917–4945.
