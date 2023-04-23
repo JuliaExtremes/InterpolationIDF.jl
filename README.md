@@ -15,8 +15,7 @@ julia> Pkg.add(url="https://github.com/JuliaExtremes/InterpolationIDF.jl")
 
 ## Data
 
-This version uses the hourly reanalyzed precipitations from the Regional Deterministic Reforecast System (Gasset *et al.*, 2021) as the spatial covariate.
-
+This version uses the hourly reanalyzed precipitations from the Regional Deterministic Reforecast System (Gasset *et al.*, 2021) as the spatial covariate, available [here](https://github.com/julemai/CaSPAr/wiki/Available-products). IDF data from ECCC's Engineering Climate Datasets can be found [here](https://collaboration.cmc.ec.gc.ca/cmc/climate/Engineer_Climate/IDF/).
 
 ## Tutorial
 
@@ -98,13 +97,13 @@ C = mcmc(datastructure, niter=NITER, warmup=WARMUP, thin=THIN)
 
 It will return an object of type "Chains" from the package *MambaLite.jl*. To trace the chain and the density plot, the function `trace_plot` can be used.
 
-### 4. Computing a sample of the GEV parameters posterior distribution
+## 4. Interpolation of the parameters at unmonitored locations
 
-`getGEV`
+To interpolate the values at the remaining grid cells, the function `interpolation` can be used. Note that considering the size of the domain, it can be recommended to extrapolate the parameters to a single point of interest rather than to the whole domain.
 
 ### 5. Cross validation
 
-`get_ω̂`, `get_ω̄`
+Useful validation criterions to implement a cross validation can be obtained with the functions `get_ω̂` and `get_ω̄`.
 
 ## References
 
