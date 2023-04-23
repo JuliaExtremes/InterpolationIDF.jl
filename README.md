@@ -54,7 +54,39 @@ station_list = get_station_list(GRIDDED_COV_PATH, STATION_INFO_PATH, STATION_DAT
 
 ### 2. Latent iGMRF definition
 
-`GMRF.iGMRF`, `create_datastructure`
+The grid structure for the latent iGMRFs is defined using the `ìGMRF` function from the package *[GMRF.jl](https://github.com/jojal5/GMRF.jl)*. The set of grid cells where the observations are is defined in $S$ and the remaining grid cells are defined in $\bar{S}$. Conditional independant subsets are also defined to improve MCMC performance.
+
+```julia
+G = GMRF.iGMRF(m₁,m₂,1,1).G
+```
+
+Then, we create the datastructure using the average daily precipitation from RDRS v2.1 and the station elevation as the spatial covariates with the function `create_datastructure` :
+
+```julia
+datastructure = create_datastructure(G, station_list, m₁, m₂, log.(gridded_cov[:,:pr]), Float64.(station_list.Elevation))
+```
+```
+DataStructure
+Y :		Vector{Vector{Float64}}[318]
+X₁ᵢ :		Matrix{Float64}[(318, 2)]
+X₂ᵢ :		Matrix{Float64}[(318, 2)]
+G :
+	GridStructure
+	gridSize :	(319, 246)
+	nbs :		Vector{Vector{Int64}}[78474]
+
+S :
+	GridPointStructure
+	V :		Vector{Int64}[318]
+	CondIndSubset :		Vector{Vector{Int64}}[2]
+	CondIndIndex :		Vector{Vector{Int64}}[2]
+
+S̄ :
+	GridPointStructure
+	V :		Vector{Int64}[78156]
+	CondIndSubset :		Vector{Vector{Int64}}[2]
+	CondIndIndex :		Vector{Vector{Int64}}[2]
+```
 
 ### 3. Markov Chain Monte Carlo for parameter estimation
 
