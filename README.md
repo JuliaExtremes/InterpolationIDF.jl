@@ -61,11 +61,13 @@ The grid structure for the latent iGMRFs is defined using the `iGMRF` function f
 G = GMRF.iGMRF(m₁,m₂,1,1).G
 ```
 
-Then, we create a `datastructure` using the average daily precipitation from *RDRS v2.1* and the station elevation as the spatial covariates with the function `create_datastructure` :
+Then, we create a datastructure using the average daily precipitation from *RDRS v2.1* and the station elevation as the spatial covariates with the function `create_datastructure` :
 
 ```julia
 datastructure = create_datastructure(G, station_list, m₁, m₂, log.(gridded_cov[:,:pr]), Float64.(station_list.Elevation))
 ```
+It returns a `datastructure` type :
+
 ```
 DataStructure
 Y :		Vector{Vector{Float64}}[318]
