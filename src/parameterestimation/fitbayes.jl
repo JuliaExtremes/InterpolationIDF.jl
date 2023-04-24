@@ -1,4 +1,27 @@
-function mcmc(data::DataStructure; niter::Int=5000, warmup::Int=2000, stepsize::Array{Float64}=[.1, .15, .02], thin::Int64=5, returnUV::Bool=false)
+"""
+    mcmc(data::DataStructure; 
+		niter::Int=5000, 
+		warmup::Int=2000, 
+		stepsize::Array{Float64}=[.1, .15, .02], 
+		thin::Int64=5, 
+		returnUV::Bool=false)
+
+Generate a sample from the GEV parameters' posterior distribution.
+
+# Arguments
+- `niter::Int = 5000`: The total number of MCMC iterations.
+- `warmup::Int = 2000`: The number of warmup iterations (burn-in).
+- `stepsize::Array{Float64}=[.1, .15, .02]`: 
+- `thin::Int64=5`:
+- `returnUV::Bool=false`:
+
+"""
+function mcmc(data::DataStructure; 
+	niter::Int=5000, 
+	warmup::Int=2000, 
+	stepsize::Array{Float64}=[.1, .15, .02], 
+	thin::Int64=5, 
+	returnUV::Bool=false)
     
     ini = initialize_rf(data)
     
@@ -6,8 +29,32 @@ function mcmc(data::DataStructure; niter::Int=5000, warmup::Int=2000, stepsize::
     
 end
 
+"""
+    mcmc(data::DataStructure,
+		initial_values::Tuple{Vector{Float64}, Vector{Float64}, Float64, Vector{Float64}, Vector{Float64}, Real, Vector{Float64}, Vector{Float64}, Real}; 
+        niter::Int=5000, 
+        warmup::Int=2000, 
+        stepsize::Array{Float64}=[.1, .15, .02], 
+        thin::Int64=5, 
+        returnUV::Bool=false)
 
-function mcmc(data::DataStructure, initial_values::Tuple{Vector{Float64}, Vector{Float64}, Float64, Vector{Float64}, Vector{Float64}, Real, Vector{Float64}, Vector{Float64}, Real}; niter::Int=5000, warmup::Int=2000, stepsize::Array{Float64}=[.1, .15, .02], thin::Int64=5, returnUV::Bool=false)
+Generate a sample from the GEV parameters' posterior distribution.
+
+# Arguments
+- `niter::Int = 5000`: The total number of MCMC iterations.
+- `warmup::Int = 2000`: The number of warmup iterations (burn-in).
+- `stepsize::Array{Float64}=[.1, .15, .02]`: 
+- `thin::Int64=5`:
+- `returnUV::Bool=false`:
+
+"""
+function mcmc(data::DataStructure, 
+	initial_values::Tuple{Vector{Float64}, Vector{Float64}, Float64, Vector{Float64}, Vector{Float64}, Real, Vector{Float64}, Vector{Float64}, Real}; 
+	niter::Int=5000, 
+	warmup::Int=2000, 
+	stepsize::Array{Float64}=[.1, .15, .02], 
+	thin::Int64=5, 
+	returnUV::Bool=false)
     
     n = length(data.Y)
     p₁ = size(data.X₁ᵢ, 2)
@@ -109,8 +156,27 @@ function mcmc(data::DataStructure, initial_values::Tuple{Vector{Float64}, Vector
     
 end
 
-
-function mcmc_valid(data::DataStructure, initial_values::Tuple{Vector{Float64}, Vector{Float64}, Float64, Vector{Float64}, Vector{Float64}, Real, Vector{Float64}, Vector{Float64}, Real}, gridpoint::Int64, X₁::Matrix{Float64}, X₂::Matrix{Float64}; niter::Int=5000, warmup::Int=2000, stepsize::Array{Float64}=[.1, .15, .02], thin::Int64=5) # u, v, xi
+"""
+	mcmc_valid(data::DataStructure, 
+		initial_values::Tuple{Vector{Float64}, Vector{Float64}, Float64, Vector{Float64}, Vector{Float64}, Real, Vector{Float64}, Vector{Float64}, Real},
+		gridpoint::Int64,
+		X₁::Matrix{Float64},
+		X₂::Matrix{Float64};
+		niter::Int=5000,
+		warmup::Int=2000,
+		stepsize::Array{Float64}=[.1, .15, .02],
+		thin::Int64=5) 
+	
+"""
+function mcmc_valid(data::DataStructure, 
+	initial_values::Tuple{Vector{Float64}, Vector{Float64}, Float64, Vector{Float64}, Vector{Float64}, Real, Vector{Float64}, Vector{Float64}, Real}, 
+	gridpoint::Int64, 
+	X₁::Matrix{Float64}, 
+	X₂::Matrix{Float64}; 
+	niter::Int=5000, 
+	warmup::Int=2000, 
+	stepsize::Array{Float64}=[.1, .15, .02], 
+	thin::Int64=5)
     
     n = length(data.Y)
     p₁ = size(data.X₁ᵢ, 2)
@@ -378,6 +444,7 @@ function regressioncoefficient_sample(F::GMRF.iGMRF, Covariate::Vector{<:Real}, 
     return β̃
 
 end
+
 
 # diagnostic tools
 
