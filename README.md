@@ -15,7 +15,7 @@ julia> Pkg.add(url="https://github.com/JuliaExtremes/InterpolationIDF.jl")
 
 ## Data
 
-This version uses the hourly reanalyzed precipitations from the Regional Deterministic Reforecast System (Gasset *et al.*, 2021) as the spatial covariate, available [here](https://github.com/julemai/CaSPAr/wiki/Available-products) and IDF data from ECCC's Engineering Climate Datasets can be found [here](https://collaboration.cmc.ec.gc.ca/cmc/climate/Engineer_Climate/IDF/).
+This version uses the hourly reanalyzed precipitations from the Regional Deterministic Reforecast System (*RDRS v2.1*, Gasset *et al.*, 2021) as the spatial covariate, available [here](https://github.com/julemai/CaSPAr/wiki/Available-products) and IDF data from ECCC's Engineering Climate Datasets can be found [here](https://collaboration.cmc.ec.gc.ca/cmc/climate/Engineer_Climate/IDF/).
 
 ## Tutorial
 
@@ -30,7 +30,7 @@ The steps of data preparation are as follows:
 
 #### 1.1. Loading the gridded spatial covariate
 
-The precipitation from RDRS v2.1 are loaded for the 78 474 cells in a rectangular grid of 319 x 246 centered in Eastern Canada.
+The precipitation from *RDRS v2.1* are loaded for the 78 474 cells in a rectangular grid of $319 \times 246$ centered in Eastern Canada.
 
 ```julia
 gridded_cov = CSV.read(GRIDDED_COV_PATH, copycols=true, DataFrame)  
@@ -61,7 +61,7 @@ The grid structure for the latent iGMRFs is defined using the `iGMRF` function f
 G = GMRF.iGMRF(m₁,m₂,1,1).G
 ```
 
-Then, we create the datastructure using the average daily precipitation from RDRS v2.1 and the station elevation as the spatial covariates with the function `create_datastructure` :
+Then, we create a `datastructure` using the average daily precipitation from *RDRS v2.1* and the station elevation as the spatial covariates with the function `create_datastructure` :
 
 ```julia
 datastructure = create_datastructure(G, station_list, m₁, m₂, log.(gridded_cov[:,:pr]), Float64.(station_list.Elevation))
