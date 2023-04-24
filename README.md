@@ -15,9 +15,11 @@ julia> Pkg.add(url="https://github.com/JuliaExtremes/InterpolationIDF.jl")
 
 ## Data
 
-This version uses the hourly reanalyzed precipitations from the Regional Deterministic Reforecast System (Gasset *et al.*, 2021) as the spatial covariate, available [here](https://github.com/julemai/CaSPAr/wiki/Available-products). IDF data from ECCC's Engineering Climate Datasets can be found [here](https://collaboration.cmc.ec.gc.ca/cmc/climate/Engineer_Climate/IDF/).
+This version uses the hourly reanalyzed precipitations from the Regional Deterministic Reforecast System (Gasset *et al.*, 2021) as the spatial covariate, available [here](https://github.com/julemai/CaSPAr/wiki/Available-products) and IDF data from ECCC's Engineering Climate Datasets can be found [here](https://collaboration.cmc.ec.gc.ca/cmc/climate/Engineer_Climate/IDF/).
 
 ## Tutorial
+
+This quick tutorial presents the main features of InterpolationIDF.jl. More details can be found [here](https://github.com/jojal5/Publications/blob/master/JalbertGenestPerreault2022/IDF_interpolation%20-%20RDRS%20v2.1.ipynb).
 
 ### 1. Data loading and preparation
 
@@ -97,7 +99,7 @@ C = mcmc(datastructure, niter=NITER, warmup=WARMUP, thin=THIN)
 
 It will return an object of type "Chains" from the package *MambaLite.jl*. To trace the chain and the density plot, the function `trace_plot` can be used.
 
-## 4. Interpolation of the parameters at unmonitored locations
+### 4. Interpolation of the parameters at unmonitored locations
 
 To interpolate the values at the remaining grid cells, the function `interpolation` can be used. Note that considering the size of the domain, it can be recommended to extrapolate the parameters to a single point of interest rather than to the whole domain.
 
