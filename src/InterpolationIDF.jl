@@ -23,6 +23,7 @@ export
     DataStructure,
 
     # Data loading
+	get_station_list,
     idf_load,
     create_datastructure,
 
